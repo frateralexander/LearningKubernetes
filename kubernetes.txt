@@ -225,30 +225,52 @@ Depois, com o template em mãos, crie o novo pod:
 
 * Crie o arquivo yaml (leleu-coceira.yaml)
 
- +--------------------------------------
- | kind: Cluster
- | apiVersion: kind.x-k8s.io/v1alpha4
- | nodes:
- | - role: control-plane
- |   extraPortMappings:
- |   - containerPort: 30080
- |     hostPort: 30080
- |     listenAddress: 127.0.0.1
- |     protocol: TCP
- +--------------------------------------
+	kind: Cluster
+	apiVersion: kind.x-k8s.io/v1alpha4
+	nodes:
+	- role: control-plane
+	  extraPortMappings:
+	  - containerPort: 30080
+	    hostPort: 30080
+	    listenAddress: 127.0.0.1
+	    protocol: TCP 
 
+* Rode o comando para criar o novo cluster
 
- 
+ kind create cluster --name leleu-coceira --config leleu-coceira.yaml 
 
+* Crie o arquivo para deploy (nginx-deploy.yaml)
 
-kind create cluster --name leleu-coceira --config leleu-3nodes.yaml 
-
-
-
-
-
-
-
-{{Nota: 1h e 28 min o video, namespace e outras coisas}}
-
+	apiVersion: apps/v1
+	kind: Deployment
+	metadata:
+	  name: nginx
+	spec:
+	  replicas: 10
+	  selector:
+	    matchLabels:
+	      app: nginx
+	  template:
+	    metadata:
+	      labels:
+	        app: nginx
+	    spec:
+	      containers:
+	      - name: nginx
+	        image: nginx:alpine
+	        ports:
+	        - containerPort: 80
+	---
+	apiVersion: v1
+	kind: Service
+	metadata:
+	  name: nginx
+	spec:
+	  type: NodePort
+	  ports:
+	  - port: 80
+	    targetPort: 80
+	    nodePort: 30080
+	  selector:
+	    app: nginx
 
