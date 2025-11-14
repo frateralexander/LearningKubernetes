@@ -1,0 +1,254 @@
+***
+https://livro.descomplicandokubernetes.com.br/pt/
+***
+
+***
+
+Control Plane      -> Controle do Kubernetes
+                      > Gerenciamento geralmente pela AWS, GCP e afins, mas pode ser gerenciado pelo usuario se nuvem particular
+     
+Workers            -> Nós do Cluster
+                      > Maquinas ou aplicações são rodadas nele
+
+ETCD               -> Datastore. Armazena as especificações, status e configurações do cluster.
+                      > Todos os dados armazenados dentro do etcd são manipulados apenas através da API
+                      > Roda dentro do Control Plane
+
+Scheduler          -> Selecionar o nó que irá hospedar um determinado pod (a menor unidade de um cluster k8s).
+                      > É basicamente um agendador.
+                      > Roda dentro do Control Plane
+
+Controller Manager -> Garante que o cluster esteja no último estado definido no etcd.
+
+Api Server         -> Este componente fornece uma API que utiliza JSON sobre HTTP para comunicação.
+                      > Para isto é utilizado principalmente o utilitário kubectl
+                      > As comunicações entre componentes são estabelecidas através de requisições REST
+
+Kubelet            -> Desempenha o papel de um agente do k8s que é executado nos nós workers.
+                      > Há um agente kubelet em cada nó worker gerenciando os pods direcionados pelo controller no cluster.
+                      > Mantem os contêineres e os pods em funcionamento seguindo as instruções fornecidas pelo controlador do cluster.
+
+Kube Proxy         -> Especie de proxy e um load balancer. 
+                      > Responsável por efetuar roteamento de requisições para os pods corretos, também por cuida da parte de rede do nó 
+                      
+                   
+***
+Conceitos-chave do k8s
+***
+
+Container          -> 
+
+Pod                -> É o menor objeto do k8s. Um pod pode possuir vários contêineres.
+                      > O k8s não trabalha com os contêineres diretamente, mas organiza-os dentro de pods,
+                        que são abstrações que dividem os mesmos recursos, como endereços, volumes, ciclos de CPU e memória.
+                      > É escaláveil horizontalmente
+
+Deployment         -> O Deployment, em conjunto com o ReplicaSet, garante que determinado número de réplicas de um pod esteja em execução nos nós workers do cluster.
+                      >  É responsável por gerenciar o ciclo de vida das aplicações, onde características associadas a aplicação, tais como imagem, porta, volumes e variáveis de ambiente,
+                         podem ser especificados em arquivos do tipo yaml ou json para posteriormente serem passados como parâmetro para o kubectl executar o deployment. 
+
+ReplicaSets        -> É responsável por garantir a quantidade de pods em execução no nó (uma especie de controlador a serviço do Deployment)
+
+Services           -> É a forma de expor a comunicação através de um ClusterIP, NodePort ou LoadBalancer para distribuir as requisições entre os diversos Pods daquele Deployment. 
+                      > Funciona como um balanceador de carga entre os pods.
+
+kubectl            -> Ferramenta de linha de comando oficial do Kubernetes
+                      > Permite interagir com clusters, executar comandos, gerenciar recursos e instalar aplicações
+
+Kind               -> O Kind (Kubernetes in Docker) é uma alternativa para executar o Kubernetes em ambiente local para testes e aprendizado (não recomendado em produção).
+
+
+### Instalando e customizando o Kubectl
+
+* Siga os passos abaixo:
+
+ curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+ kubectl version --client
+
+### Instalando e customizando o Kind
+
+Antes de instalar o kind é preciso instalar o docker, execute os comandos abaixo:
+
+ curl -fsSL https://get.docker.com -o get-docker.sh
+
+ sudo sh get-docker.sh
+
+ sudo usermod -aG docker $USER
+
+Agora siga com a instalação do kind
+
+ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+
+ sudo install -o root -g root -m 0755 kind /usr/local/bin/kind
+
+
+# # # # # # # # #
+# Testes Dia 1  #
+# # # # # # # # # 
+
+### Criando cluster no kind (Esse teste cria um cluster com apenas um nó, que fica sendo o control-plane e os workers ao mesmo tempo)
+
+* Crie um novo cluster    
+
+ kind create cluster
+
+* Confirme a criação com o comando abaixo
+
+ kubectl cluster-info --context kind-kind
+
+* Verificando nós
+
+  kubectl get nodes 
+
+* Crie um novo com nome especifico
+
+ kind create cluster --name leleu-coceira
+
+* Liste os cluster's criados
+
+  kind get clusters
+
+* Apague os clusters criados
+
+  kind delete clusters $(kind get cluster)
+
+### Criando um cluster com multiplos múltiplos nós locais com o Kind
+
+* Crie um arquivo de configuração yaml (o comando abaixo cuidará disso)
+
+ cat << EOF > $HOME/leleu-3nodes.yaml
+ kind: Cluster
+ apiVersion: kind.x-k8s.io/v1alpha4
+ nodes:
+   - role: control-plane
+   - role: worker
+   - role: worker
+ EOF
+
+* Agora vamos criar um cluster chamado kind-multinodes utilizando as especificações definidas no arquivo kind-3nodes.yaml.
+
+ kind create cluster --name leleu-coceira --config leleu-3nodes.yaml
+
+### Contato Inicial
+
+* Verificando os namespaces e pods
+
+ kubectl get namespaces
+
+* listando os pods do namespace kube-system (um dos namespaces)
+
+ kubectl get pods -n kube-system
+
+{{Nota:
+        O kube-system isola os recursos internos do cluster das suas cargas de trabalho (aplicações). Sendo reservado para os recursos
+        do próprio sistema Kubernetes (o core do cluster)
+}}
+
+* Listando pods de todos os namespaces
+
+ kubectl get pods -A
+
+ou
+
+ kubectl get pods -A -o wide
+
+* Obtendo detalhes de um nó
+
+ kubectl describe node [nome-do-nó] 
+
+{{Nota: 
+        O nome dos nós pode ser obtido com o comando `kubectl get nodes`
+}}
+
+### Executando nosso primeiro pod no k8s
+
+* Inicie o pod
+
+ kubectl run nginx --image nginx
+
+* Confira se foi criado
+
+ kubectl get pods
+
+* Remova o pod
+
+ kubectl delete pod nginx
+
+### Executando nosso primeiro pod no k8s utilizando um arquivo manifesto
+
+* Criando pod através da utilizaçâo de uma arquivo manifesto.
+
+Primeiro, criamos um template:
+
+  kubectl run my-nginx --image nginx --dry-run=client -o yaml > pod-template.yaml
+
+Depois, com o template em mãos, crie o novo pod:
+
+ kubectl apply -f pod-template.yaml
+
+{{Nota:
+        Arquivo manifesto é um arquivo em formato YAML onde você passa todas as definições do seu objeto.
+}}
+
+### Expondo o pod e criando um Service
+
+* Apaque o pod anterior e recrie com o comando
+
+ kubectl run meu-nginx --image nginx --port 80 --dry-run=client -o yaml > pod-template.yaml
+
+ kubectl create -f pod-template.yaml
+
+* Liste os pods
+
+ kubectl get pods
+
+* Exponha o pod
+
+ kubectl expose pod meu-nginx
+
+* Liste os serviços
+
+ kubectl get pods,services
+
+### Fazendo com Deployment
+
+* Primeiro devemos apagar todo o ambiente anterior
+
+ kind delete cluster --name meu-nginx
+
+ kubectl delete all --all-namespaces
+
+ pkill -f "kubectl port-forward"
+
+* Crie o arquivo yaml (leleu-coceira.yaml)
+
+ +--------------------------------------
+ | kind: Cluster
+ | apiVersion: kind.x-k8s.io/v1alpha4
+ | nodes:
+ | - role: control-plane
+ |   extraPortMappings:
+ |   - containerPort: 30080
+ |     hostPort: 30080
+ |     listenAddress: 127.0.0.1
+ |     protocol: TCP
+ +--------------------------------------
+
+
+ 
+
+
+kind create cluster --name leleu-coceira --config leleu-3nodes.yaml 
+
+
+
+
+
+
+
+{{Nota: 1h e 28 min o video, namespace e outras coisas}}
+
+
