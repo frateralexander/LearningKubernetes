@@ -274,3 +274,89 @@ Depois, com o template em mãos, crie o novo pod:
 	  selector:
 	    app: nginx
 
+
+# # # # # # # # #
+# Testes Dia 2  #
+# # # # # # # # #
+
+.:: Objetivos ::.
+
+1. Estudar o menor objeto do kubernetes: o POD.
+   1.1. Criação
+   1.2. Pod com multicontainers
+   1.3. Pod com volumes
+   1.4. Limitação ao consumo de recursos: CPU, memória, etc.
+
+.:: Conceitos ::.
+
+Pod é a menor unidade dentro de um cluster.
+Pod é como um caixa, podendo ter um ou mais containers.
+Esses containers compartilham os mesmos recursos do Pod, como por exemplo, o IP, o namespace, o volume, etc.
+Quando falamos de Pod, estamos falando de um ou mais containers que compartilham os mesmos recursos, ponto.
+
+	+--------------------------------------------------------------+
+	|          POD (A "Caixa" - Menor Unidade do Cluster)          |
+	|                                                              |
+	|  +--  Recursos Compartilhados (Namespace, IP: 10.0.0.1) --+  |
+	|  |                                                        |  |
+	|  |    +-------------------+       +-------------------+   |  |
+	|  |    |                   |       |                   |   |  |
+	|  +--->|    Container A    |       |    Container B    | <-+  |
+	|       |                   |       |                   |      |
+	|       +---------+---------+       +---------+---------+      |
+	|                 |                           |                |
+	|                 |                           |                |
+	|                 v                           v                |
+	|       +-------------------------------------------+          |
+	|       |           VOLUME (Disco/Dados)            |          |
+	|       +-------------------------------------------+          |
+	|                                                              |
+	+--------------------------------------------------------------+
+
+### Criando um pod via linha de comando
+
+Primeiro vamos criar um cluster
+
+ king create cluster
+
+Agora vamos criar nosso pod
+
+ kubectl run leleu-coceira --image=nginx --port=80
+
+Visualize o pod
+
+ kubectl get pods
+
+ou de forma um pouco mais detalhada
+
+ kubectl get pods -o wide
+
+Trabalheremos com namespaces outros dia. Por enquanto, vamos focar em Pods e apenas temos que saber que por padrão,
+o Kubernetes irá criar todos os objetos dentro da namespace default se não especificarmos outra.
+
+Se quisermos já ver os pods que temos dentro das namespaces podemos usar os seguintes comandos
+
+ kubectl get pods --all-namespaces
+
+ kubectl get pods -A
+
+O pod que acabamos de criar vai aparecer no namespace "default".
+
+Se quisermos ver apenas os pods existentes dentro de um namespace podemos utilizar o comando abaixo
+
+ kubect get pods -n <namespace>
+
+E caso queiramos detalhes sobre o eles basta jogarmos a saida para o yaml ou para json
+
+ kubectl get pods -n <namespace> -o yaml
+
+ kubectl get pods -n <namespace> -o json
+
+
+
+
+
+
+
+
+
