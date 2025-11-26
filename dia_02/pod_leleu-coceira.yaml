@@ -1,0 +1,23 @@
+# Versão da api do kubernetes
+apiVersion: v1
+# Tipo de objeto a se criar
+kind: Pod
+# Metadados do Pod
+metadata:
+  # Nome do Pod que criaremos
+  name: leleu-coceira
+  # Labels do Pod
+  labels:
+    # Label run com o valor leleu-coceira
+    run: leleu-coceira
+# Especificação do Pod
+spec:
+  # Containers que estarão dentro do Pod
+  containers:
+    # Nome do container
+    - name: leleu-coceira
+    # Imagem que o Pod utilizará
+      image: nginx
+    # Portas de comunicação expostas pelo container
+      ports:
+      - containerPort: 80

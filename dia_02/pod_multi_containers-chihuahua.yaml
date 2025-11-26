@@ -1,0 +1,30 @@
+# Versão da API do kubernetes
+apiVersion: v1
+# Tipo de objeto a se criar
+kind: Pod
+# Metadados do Pod
+metadata:
+  # Nome do Pod  
+  name: chihuahua
+    # Labels do pod
+  labels:
+    # label run com o valor chihuahua 
+    run: chihuahua
+# Especificação do pod
+spec:
+  # Criando os containers
+  containers:
+  # Nome do container
+  - name: leleu-coceira
+    # Imagem do container
+    image: nginx
+    # Portas expostas pelo container
+    ports:
+    - containerPort: 80
+  # Nome do container    
+  - name: valdete-pedrada
+    # Imagem do container
+    image: alpine
+    args:
+    - sleep
+    - "1800"

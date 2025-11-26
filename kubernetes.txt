@@ -301,7 +301,7 @@ Quando falamos de Pod, estamos falando de um ou mais containers que compartilham
 	|  |                                                        |  |
 	|  |    +-------------------+       +-------------------+   |  |
 	|  |    |                   |       |                   |   |  |
-	|  +--->|    Container A    |       |    Container B    | <-+  |
+	|  +--->|    Container A    |  < >  |    Container B    | <-+  |
 	|       |                   |       |                   |      |
 	|       +---------+---------+       +---------+---------+      |
 	|                 |                           |                |
@@ -352,11 +352,141 @@ E caso queiramos detalhes sobre o eles basta jogarmos a saida para o yaml ou par
 
  kubectl get pods -n <namespace> -o json
 
+Outra forma de vizualirmos detalhes acerca do pod
 
+ kubectl describe pods <nome do pod>
 
+Removendo o pod
 
+ kubectl delete pod <nome do pod>
 
+### Criando um Pod através de um arquivo YAML
 
+Criaremos agora um pod por meio de um arquivo yaml. 
+
+ cat << EOF > pod_leleu-coceira.yaml
+ # Versão da api do kubernetes
+ apiVersion: v1
+ # Tipo de objeto a se criar
+ kind: Pod
+ # Metadados do Pod
+ metadata:
+   # Nome do Pod que criaremos
+   name: leleu-coceira
+   # Labels do Pod
+   labels:
+     # Label run com o valor leleu-coceira
+     run: leleu-coceira
+ # Especificação do Pod
+ spec:
+   # Containers que estarão dentro do Pod
+   containers:
+   # O Hifen abaixo indica o inicio da lista de containers
+   - name: leleu-coceira
+     # Imagem que o Pod utilizará
+     image: nginx
+     # Portas de comunicação expostas pelo container
+     ports:
+     # Hifen para lista de portas e espaço após os dois pontos
+     - containerPort: 80
+ EOF
+
+Agora utilize o get para ver o Pod criado
+
+ kubectl get pods
+
+O comando apply é um comando aplica o arquivo YAML no cluster, ou seja, ele cria o objeto que está descrito no arquivo YAML no cluster.
+Caso o objeto já exista, ele irá atualizá-lo com as informações que estão no arquivo YAML.
+
+Vamos agora visualizar os logs de nosso Pod
+
+ kubectl logs <nome do pod>
+
+Também é possível ver os logs em tempo real
+
+ kubectl logs -f <nome do pod> 
+
+Agora vamos apagar nosso Pod
+
+ kubectl delete pod <nome do pod>
+
+### Criando um Pod com multiplos containers (ainda utilizando arquivo YAML)
+
+Criaremos agora o yaml que permitira levantarmos um pod com dois containers internos.
+
+ cat << EOF >> pod_multi_contaners-chihuahua.yaml
+ # Versão da API do kubernetes
+ apiVersion: v1
+ # Tipo de objeto a se criar
+ kind: Pod
+ # Metadados do Pod
+ metadata:
+   # Nome do Pod  
+   name: chihuahua
+     # Labels do pod
+   labels:
+     # label run com o valor chihuahua 
+     run: chihuahua
+ # Especificação do pod
+ spec:
+   # Criando os containers
+   containers:
+   # Nome do container
+   - name: leleu-coceira
+     # Imagem do container
+     image: nginx
+     # Portas expostas pelo container
+     ports:
+     - containerPort: 80
+   # Nome do container    
+   - name: valdete-pedrada
+     # Imagem do container
+     image: alpine
+     args:
+     - sleep
+     - "1800"
+ EOF
+
+Agora criemos o Pod
+
+ kubectl apply -f pod_multi_contaners-chihuahua.yaml
+
+Vamos visualizar o pod
+
+ kubectl get pods chihuahua
+
+ kubectl describe pods chihuhua
+
+### Utilizando os comandos attach e exec
+
+O attach é como se estivéssemos conectando diretamente em uma console de uma máquina virtual, não estamos criando nenhum processo dentro do container, apenas nos conectando a ele.
+
+ kubectl attach chihuahua -c leleu-coceira
+
+Por esse motivo se tentarmos utilizar o attach para conectar no container que está rodando o Nginx, nós iremos conectar ao container e ficaremos presos ao processo do Nginx que está
+em execução em primeiro plano, e não conseguiremos executar nenhum outro comando.
+
+ kubectl attach chihuhua -c valdete-pedrada
+
+Só vamos usar o attach para se conectar a um container que está rodando dentro de um Pod, e não para executar comandos dentro do container.
+
+No entando, para rodar comandos dentro do container, devemos utilizar o comando exec
+
+ kubectl exec chihuahua -c leleu-coceira -- ls
+
+ kubectl exec chihuahua -c valdete-pedrada -- ls
+
+Para conectar em um container que está rodando dentro de um Pod podemos passar o parâmetro -it para o comando exec.
+
+ kubectl exec chihuahua -c valdade-pedrada -it -- sh 
+
+Para sair basta digiratar CTRLC+D
+
+Agora, remova o pod
+
+ kubectl delete pod <nome do pod>
+
+### Criando um container com limites de memória e CPU
 
 
 
