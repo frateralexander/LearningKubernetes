@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dir-testing
+spec:
+  containers:
+    - name: emptydir
+      image: ubuntu
+      args:
+        - sleep
+        - infinity
+      # Lista de volumes
+      volumeMounts:
+        - name: emptyvol1
+          mountPath: /emptyvol1
+  volumes:
+    - name: emptyvol1
+      emptyDir:
+        sizeLimit: 256Mi

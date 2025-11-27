@@ -531,3 +531,162 @@ Vamos trabalhar agora na limitação de recursos. Para isso vamos criar nosso pr
          cpu:  "0.3"
  EOF
 
+Agora criamos o pod
+
+ kubectl apply -f pod-limitado.yaml
+
+ou
+
+ kubectl create -f pod-limitado.yaml
+
+Utilizamos O campo resources é para definir os recursos que utilizados pelo container.
+
+O campo limits é usado para definir os limites máximos de recursos que o container pode utilizar e o campo requests é usado para definir os recursos garantidos ao container.
+
+{{Nota: 
+        Observe que o kubernetes trabalha com valor Mi e Gi (Mebibyte e Gibibyte)
+
+ +---------+----------+--------------------+---------------+
+ | Notação | Nome     | Valor Real (Bytes) | Diferença     |
+ +---------+----------+--------------------+---------------+
+ | 1 M     | Megabyte | 1.000.000          | Padrão (Base) | 
+ +---------+----------+--------------------+---------------+
+ | 1 Mi    | Mebibyte | 1.048.576          | ~4.8% maior   |
+ +---------+----------+--------------------+---------------+
+ | 1 G     | Gigabyte | 1.000.000.000      | Padrão (Base) |
+ +---------+----------+--------------------+---------------+
+ | 1 Gi    | Gibibyte | 1.073.741.824      | ~7.3% maior   |
+ +---------+----------+--------------------+---------------+
+
+}}
+
+Se analisarmos nosso pod como describe, veremos a saida indicando uso de cpu em 500 (que significa 50% do uso de uma cpu)
+
+ [...]
+ Limits:
+      cpu:     500m
+      memory:  128Mi
+    Requests:
+      cpu:        300m
+      memory:     64Mi
+ [...]
+
+Vamos agora fazer um novo teste, vamos criar um pod ubuntu.
+
+ cat <<EOF > pod-ubuntu-limitado.yaml
+ apiVersion: v1
+ kind: Pod
+ metadata:
+   name: ubuntu
+ spec:
+   containers:
+   - name: ubuntu
+     image: ubuntu
+     args:
+       - sleep
+       - infinity
+     resources:
+       limits:
+         memory: "128Mi"
+         cpu: "0.5"
+       requests:
+         memory: "64Mi"
+         cpu: "0.3"
+ EOF
+
+Criamos o pod
+
+ kubectl create pod -f pod-ubuntu-limitado.yaml
+
+Entramos no container
+
+ kubectl exec ubuntu -it -- bash
+
+Instale o stress
+
+ apt update
+ apt install -y stress
+
+Rode o comando stress consumindo 100 de memoria
+
+ stress --vm 1 --vm-bytes 100M
+
+Agora tente rodar consumindo 200
+
+ stress --vm 1 --vm-bytes 200M
+
+Observe que vai retornar um erro...
+
+ root@ubuntu:/# stress --vm 1 --vm-bytes 200M
+ stress: info: [201] dispatching hogs: 0 cpu, 0 io, 1 vm, 0 hdd
+ stress: FAIL: [201] (425) <-- worker 202 got signal 9
+ stress: WARN: [201] (427) now reaping child worker processes
+ stress: FAIL: [201] (461) failed run completed in 0s
+
+### Adicionando um volume EmptyDir no Pod
+
+Não vamos nos aprofundar muito agora na questão de volumes, mas vamos começar a olhar para eles.
+
+Iniciaremos com a criação de um Pod com volume EmptyDir. Esse tipo volume é criado no momento em que o Pod é criado, e ele é destruído quando o Pod é destruído,
+ou seja, ele é um volume temporário.
+
+Vamos criar o arquivo para levantar o pod
+
+ cat << EOF > pod-emptydir.yaml
+ apiVersion: v1
+ kind: Pod
+ metadata:
+   name: dir-testing
+ spec:
+   containers:
+   - name: emptydir
+     image: ubuntu
+     args:
+     - sleep
+     - infinity
+     # Lista de volumes
+     volumeMounts:
+     - name: emptyvol1
+       mountPath: /emptyvol1
+   volumes:
+   - name: emptyvol1
+     emptyDir:
+       sizeLimit: 256Mi
+ EOF
+
+agora crie o volume
+
+ kubectl create -f pod-emptydir.yaml
+
+Acesse o Pod
+
+ kubectl exec dir-testing -it -- bash
+
+Verifique a montagem 
+
+ root@dir-testing:/# mount | grep emptyvol1
+ /dev/sdb2 on /emptyvol1 type ext4 (rw,relatime,errors=remount-ro)
+
+ root@dir-testing:/# df -h
+ Filesystem      Size  Used Avail Use% Mounted on
+ overlay         219G   60G  148G  29% /
+ tmpfs            64M     0   64M   0% /dev
+ /dev/sdb2       219G   60G  148G  29% /emptyvol1
+ shm              64M     0   64M   0% /dev/shm
+ tmpfs            32G   12K   32G   1% /run/secrets/kubernetes.io/serviceaccount
+ tmpfs            16G     0   16G   0% /proc/asound
+ tmpfs            16G     0   16G   0% /proc/acpi
+ tmpfs            16G     0   16G   0% /proc/scsi
+ tmpfs            16G     0   16G   0% /sys/firmware
+
+Por fim, crie algo dentro do volume
+
+ touch /emptyvol1/testing
+
+Verifique a criação
+
+ root@dir-testing:/# ls /emptyvol1/
+ testing
+
+
+
