@@ -488,5 +488,46 @@ Agora, remova o pod
 
 ### Criando um container com limites de memória e CPU
 
+Vamos trabalhar agora na limitação de recursos. Para isso vamos criar nosso proximo arquivo YAML
 
+ cat << EOF > pod-limitado.yaml
+ # Versão da API
+ apiVersion: v1
+ # Tipo de objeto que estamos criando (Letra maiúscula importa!)
+ kind: Pod
+ # Metadados do pod
+ metadata:
+   # Nome do pod
+   name: chihuahua
+   # Labels do pod
+   labels:
+     # Label run com valor chihuahua 
+     run: chihuahua
+ # Especificação do pod    
+ spec:
+   # Containers dentro do pod (PLURAL: containers)
+   containers:
+   # Nome do container
+   - name: leleu-coceira
+     # Imagem que esta utilizando
+     image: nginx
+     # Portas expostas pelo container
+     ports:
+     # Porta 80 exposta
+     - containerPort: 80
+     # Controle de recursos utilizados
+     resources:
+       # Especificação de limites (Teto máximo)
+       limits:
+         # Memoria alocada para o container
+         memory: "128Mi" 
+         # Cpu alocada para o container (0.5 = meio núcleo)
+         cpu: "0.5"
+       # Recursos garantidos ao container (PLURAL: requests)
+       requests:
+         # Memoria garantida pelo container
+         memory: "64Mi"
+         # Cpu garantida pelo container
+         cpu:  "0.3"
+ EOF
 
