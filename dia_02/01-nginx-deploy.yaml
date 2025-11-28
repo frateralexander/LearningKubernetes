@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chihuahua
+spec:
+ replicas: 6
+ selector:
+   matchLabels:
+     app: chihuahua
+ template:
+   metadata:
+     labels:
+       app: chihuahua
+   spec:
+     containers:
+     - name: leleu-coceira
+       image: nginx:alpine
+       ports:
+        - containerPort: 80
